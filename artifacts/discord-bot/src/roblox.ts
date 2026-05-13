@@ -1,4 +1,3 @@
-const ROBLOX_API_BASE = "https://users.roblox.com/v1";
 const GAMEPASS_API_BASE = "https://inventory.roblox.com/v1";
 
 export async function getRobloxUserId(username: string): Promise<number | null> {
@@ -14,6 +13,19 @@ export async function getRobloxUserId(username: string): Promise<number | null> 
   if (!data.data || data.data.length === 0) return null;
 
   return data.data[0].id;
+}
+
+export async function getRobloxAvatar(userId: number): Promise<string | null> {
+  const url = `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=false`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+
+  const data = (await res.json()) as {
+    data: { targetId: number; state: string; imageUrl: string }[];
+  };
+
+  if (!data.data || data.data.length === 0) return null;
+  return data.data[0].imageUrl ?? null;
 }
 
 export async function ownsGamePass(

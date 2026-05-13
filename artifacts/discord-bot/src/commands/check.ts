@@ -15,9 +15,17 @@ import {
   TextInputStyle,
 } from "discord.js";
 import { GAME_PASSES } from "../gamepasses.js";
-import { checkAnyGamePass, getRobloxUserId } from "../roblox.js";
+import { checkAnyGamePass, getRobloxAvatar, getRobloxUserId } from "../roblox.js";
 
 const BRAND_COLOR = 0x9b59b6;
+
+const E = {
+  world:   "<:000_world:1495816055065673921>",
+  chaos:   "<:chaos:1482613303422357544>",
+  x:       "<:x_:1201028880941715486>",
+  ticket:  "<:ticketicon:1227333019212316732>",
+  person:  "<:Person:1498804921737416765>",
+};
 
 export const data = new SlashCommandBuilder()
   .setName("check")
@@ -37,13 +45,13 @@ export async function execute(
 ): Promise<void> {
   const selectMenu = new StringSelectMenuBuilder()
     .setCustomId("gamepass_select")
-    .setPlaceholder("🎮 Pick a game pass...")
+    .setPlaceholder("Pick a game pass...")
     .addOptions(
       GAME_PASSES.map((gp) =>
         new StringSelectMenuOptionBuilder()
           .setLabel(gp.name)
           .setValue(gp.name)
-          .setEmoji("🎟️")
+          .setEmoji({ id: "1227333019212316732", name: "ticketicon" })
       )
     );
 
@@ -53,7 +61,7 @@ export async function execute(
 
   const promptEmbed = new EmbedBuilder()
     .setColor(BRAND_COLOR)
-    .setTitle("🌍 Chaos Worldwide — Game Pass Checker")
+    .setTitle(`${E.world} Chaos Worldwide — Game Pass Checker`)
     .setDescription(
       "Select a game pass from the dropdown below, then enter a Roblox username to check ownership."
     )
@@ -80,10 +88,8 @@ export async function execute(
   if (!selectResponse) {
     const timeoutEmbed = new EmbedBuilder()
       .setColor(Colors.Grey)
-      .setTitle("⏰ Timed Out")
-      .setDescription(
-        "No game pass was selected in time. Run `/check` again to retry."
-      )
+      .setTitle(`${E.x} Timed Out`)
+      .setDescription("No game pass was selected in time. Run `/check` again to retry.")
       .setFooter({ text: "Chaos Worldwide Bot" });
 
     await interaction.editReply({ embeds: [timeoutEmbed], components: [] });
@@ -104,7 +110,7 @@ export async function execute(
 
   const modal = new ModalBuilder()
     .setCustomId("username_modal")
-    .setTitle(`🎟️ ${gamePass.name}`);
+    .setTitle(gamePass.name);
 
   const usernameInput = new TextInputBuilder()
     .setCustomId("roblox_username")
@@ -131,28 +137,22 @@ export async function execute(
   if (!modalSubmit) {
     const timeoutEmbed = new EmbedBuilder()
       .setColor(Colors.Grey)
-      .setTitle("⏰ Timed Out")
-      .setDescription(
-        "No username was entered in time. Run `/check` again to retry."
-      )
+      .setTitle(`${E.x} Timed Out`)
+      .setDescription("No username was entered in time. Run `/check` again to retry.")
       .setFooter({ text: "Chaos Worldwide Bot" });
 
     await interaction.editReply({ embeds: [timeoutEmbed], components: [] });
     return;
   }
 
-  const username = modalSubmit.fields
-    .getTextInputValue("roblox_username")
-    .trim();
+  const username = modalSubmit.fields.getTextInputValue("roblox_username").trim();
 
   await modalSubmit.deferUpdate();
 
   const loadingEmbed = new EmbedBuilder()
     .setColor(BRAND_COLOR)
-    .setTitle("🔍 Checking...")
-    .setDescription(
-      `Looking up **${username}** for the **${gamePass.name}** game pass...`
-    )
+    .setTitle(`${E.chaos} Checking...`)
+    .setDescription(`Looking up **${username}** for the **${gamePass.name}** game pass...`)
     .setFooter({ text: "Chaos Worldwide Bot • Powered by Remy" });
 
   await interaction.editReply({ embeds: [loadingEmbed], components: [] });
@@ -162,7 +162,7 @@ export async function execute(
   if (!userId) {
     const notFoundEmbed = new EmbedBuilder()
       .setColor(Colors.Red)
-      .setTitle("❌ User Not Found")
+      .setTitle(`${E.x} User Not Found`)
       .setDescription(
         `Could not find a Roblox account named **${username}**.\nDouble-check the spelling and try again.`
       )
@@ -173,19 +173,22 @@ export async function execute(
     return;
   }
 
-  const owns = await checkAnyGamePass(userId, gamePass.ids);
+  const [owns, avatarUrl] = await Promise.all([
+    checkAnyGamePass(userId, gamePass.ids),
+    getRobloxAvatar(userId),
+  ]);
 
   const resultEmbed = new EmbedBuilder()
     .setColor(owns ? Colors.Green : Colors.Red)
-    .setTitle(owns ? "✅ Game Pass Owned" : "❌ Game Pass Not Owned")
+    .setTitle(owns ? "✅ Game Pass Owned" : `${E.x} Game Pass Not Owned`)
     .addFields(
-      { name: "👤 Roblox User", value: `**${username}**`, inline: true },
-      { name: "🎟️ Game Pass", value: `**${gamePass.name}**`, inline: true },
+      { name: `${E.person} Roblox User`, value: `**${username}**`, inline: true },
+      { name: `${E.ticket} Game Pass`, value: `**${gamePass.name}**`, inline: true },
       {
         name: "📋 Status",
         value: owns
           ? "✅ **OWNS** this game pass"
-          : "❌ **Does NOT own** this game pass",
+          : `${E.x} **Does NOT own** this game pass`,
         inline: false,
       }
     )
@@ -194,6 +197,8 @@ export async function execute(
     })
     .setTimestamp();
 
-  await interaction.editReply({ content: "✅ Check complete!", embeds: [], components: [] });
+  if (avatarUrl) resultEmbed.setThumbnail(avatarUrl);
+
+  await interaction.editReply({ content: "Check complete!", embeds: [], components: [] });
   await interaction.followUp({ embeds: [resultEmbed] });
 }
