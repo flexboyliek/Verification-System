@@ -1,33 +1,49 @@
 import {
   ActionRowBuilder,
+  ApplicationIntegrationType,
   ChatInputCommandInteraction,
+  Colors,
   ComponentType,
+  EmbedBuilder,
+  InteractionContextType,
+  MessageFlags,
   ModalBuilder,
   SlashCommandBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
   TextInputBuilder,
   TextInputStyle,
-  MessageFlags,
 } from "discord.js";
 import { GAME_PASSES } from "../gamepasses.js";
 import { checkAnyGamePass, getRobloxUserId } from "../roblox.js";
 
+const BRAND_COLOR = 0x9b59b6;
+
 export const data = new SlashCommandBuilder()
   .setName("check")
-  .setDescription("Check if a Roblox user owns a Chaos Worldwide game pass");
+  .setDescription("Check if a Roblox user owns a Chaos Worldwide game pass")
+  .setIntegrationTypes(
+    ApplicationIntegrationType.GuildInstall,
+    ApplicationIntegrationType.UserInstall
+  )
+  .setContexts(
+    InteractionContextType.Guild,
+    InteractionContextType.BotDM,
+    InteractionContextType.PrivateChannel
+  );
 
 export async function execute(
   interaction: ChatInputCommandInteraction
 ): Promise<void> {
   const selectMenu = new StringSelectMenuBuilder()
     .setCustomId("gamepass_select")
-    .setPlaceholder("Select a game pass...")
+    .setPlaceholder("🎮 Pick a game pass...")
     .addOptions(
       GAME_PASSES.map((gp) =>
         new StringSelectMenuOptionBuilder()
           .setLabel(gp.name)
           .setValue(gp.name)
+          .setEmoji("🎟️")
       )
     );
 
@@ -35,8 +51,17 @@ export async function execute(
     selectMenu
   );
 
+  const promptEmbed = new EmbedBuilder()
+    .setColor(BRAND_COLOR)
+    .setTitle("🌍 Chaos Worldwide — Game Pass Checker")
+    .setDescription(
+      "Select a game pass from the dropdown below, then enter a Roblox username to check ownership."
+    )
+    .setFooter({ text: "Chaos Worldwide Bot • Powered by Roblox API" })
+    .setTimestamp();
+
   await interaction.reply({
-    content: "**Chaos Worldwide — Game Pass Checker**\nSelect a game pass to check:",
+    embeds: [promptEmbed],
     components: [row],
     flags: MessageFlags.Ephemeral,
   });
@@ -53,10 +78,15 @@ export async function execute(
     .catch(() => null);
 
   if (!selectResponse) {
-    await interaction.editReply({
-      content: "Timed out — no game pass selected.",
-      components: [],
-    });
+    const timeoutEmbed = new EmbedBuilder()
+      .setColor(Colors.Grey)
+      .setTitle("⏰ Timed Out")
+      .setDescription(
+        "No game pass was selected in time. Run `/check` again to retry."
+      )
+      .setFooter({ text: "Chaos Worldwide Bot" });
+
+    await interaction.editReply({ embeds: [timeoutEmbed], components: [] });
     return;
   }
 
@@ -67,13 +97,14 @@ export async function execute(
     await selectResponse.update({
       content: "Unknown game pass selected.",
       components: [],
+      embeds: [],
     });
     return;
   }
 
   const modal = new ModalBuilder()
     .setCustomId("username_modal")
-    .setTitle(`Check: ${gamePass.name}`);
+    .setTitle(`🎟️ ${gamePass.name}`);
 
   const usernameInput = new TextInputBuilder()
     .setCustomId("roblox_username")
@@ -98,38 +129,70 @@ export async function execute(
     .catch(() => null);
 
   if (!modalSubmit) {
-    await interaction.editReply({
-      content: "Timed out — no username entered.",
-      components: [],
-    });
+    const timeoutEmbed = new EmbedBuilder()
+      .setColor(Colors.Grey)
+      .setTitle("⏰ Timed Out")
+      .setDescription(
+        "No username was entered in time. Run `/check` again to retry."
+      )
+      .setFooter({ text: "Chaos Worldwide Bot" });
+
+    await interaction.editReply({ embeds: [timeoutEmbed], components: [] });
     return;
   }
 
-  const username = modalSubmit.fields.getTextInputValue("roblox_username").trim();
+  const username = modalSubmit.fields
+    .getTextInputValue("roblox_username")
+    .trim();
 
   await modalSubmit.deferUpdate();
-  await interaction.editReply({
-    content: `🔍 Checking **${username}** for **${gamePass.name}**...`,
-    components: [],
-  });
+
+  const loadingEmbed = new EmbedBuilder()
+    .setColor(BRAND_COLOR)
+    .setTitle("🔍 Checking...")
+    .setDescription(
+      `Looking up **${username}** for the **${gamePass.name}** game pass...`
+    )
+    .setFooter({ text: "Chaos Worldwide Bot • Powered by Roblox API" });
+
+  await interaction.editReply({ embeds: [loadingEmbed], components: [] });
 
   const userId = await getRobloxUserId(username);
 
   if (!userId) {
-    await interaction.editReply({
-      content: `❌ Could not find a Roblox user named **${username}**. Check the spelling and try again.`,
-    });
+    const notFoundEmbed = new EmbedBuilder()
+      .setColor(Colors.Red)
+      .setTitle("❌ User Not Found")
+      .setDescription(
+        `Could not find a Roblox account named **${username}**.\nDouble-check the spelling and try again.`
+      )
+      .setFooter({ text: "Chaos Worldwide Bot • Powered by Roblox API" })
+      .setTimestamp();
+
+    await interaction.editReply({ embeds: [notFoundEmbed] });
     return;
   }
 
   const owns = await checkAnyGamePass(userId, gamePass.ids);
 
-  const statusEmoji = owns ? "✅" : "❌";
-  const statusText = owns ? "**OWNS**" : "**does NOT own**";
+  const resultEmbed = new EmbedBuilder()
+    .setColor(owns ? Colors.Green : Colors.Red)
+    .setTitle(owns ? "✅ Game Pass Owned" : "❌ Game Pass Not Owned")
+    .addFields(
+      { name: "👤 Roblox User", value: `**${username}**`, inline: true },
+      { name: "🎟️ Game Pass", value: `**${gamePass.name}**`, inline: true },
+      {
+        name: "📋 Status",
+        value: owns
+          ? "✅ **OWNS** this game pass"
+          : "❌ **Does NOT own** this game pass",
+        inline: false,
+      }
+    )
+    .setFooter({
+      text: `Chaos Worldwide Bot • Checked ${gamePass.ids.length} pass ID(s)`,
+    })
+    .setTimestamp();
 
-  await interaction.editReply({
-    content:
-      `${statusEmoji} **${username}** ${statusText} the **${gamePass.name}** game pass.\n` +
-      `-# Checked ${gamePass.ids.length} pass ID(s) | Chaos Worldwide`,
-  });
+  await interaction.editReply({ embeds: [resultEmbed] });
 }
