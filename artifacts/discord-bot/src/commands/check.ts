@@ -14,8 +14,16 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from "discord.js";
-import { GAME_PASSES } from "../gamepasses.js";
+import { GAME_PASSES, hasRankFollowup } from "../gamepasses.js";
 import { checkAnyGamePass, getRobloxAvatar, getRobloxUserId } from "../roblox.js";
+
+const OWNED_FOLLOWUP = `You have successfully received your rank.
+
+Please remember that abusing administrative commands is strictly prohibited. This includes, but is not limited to: btools, :m / :n announcements, copying tools, charaudio, setmsg, stun commands, forcing players to sit, or kicking/banning/flinging users without proper authorization.
+
+Failure to follow community and administrative guidelines may result in punishment or rank removal.`;
+
+const NOT_OWNED_FOLLOWUP = `Please ensure that you purchased the gamepass in order for us to move forward and give you the correct rank.`;
 
 const BRAND_COLOR = 0x9b59b6;
 
@@ -201,4 +209,8 @@ export async function execute(
 
   await interaction.editReply({ content: "Check complete!", embeds: [], components: [] });
   await interaction.followUp({ embeds: [resultEmbed] });
+
+  if (hasRankFollowup(gamePass.name)) {
+    await interaction.followUp({ content: owns ? OWNED_FOLLOWUP : NOT_OWNED_FOLLOWUP });
+  }
 }
