@@ -5,9 +5,8 @@ export interface GamePass {
 
 export const GAME_PASSES: GamePass[] = [
   { name: "Chaotic Hosters", ids: [1832513522] },
+  { name: "Chaotic Mod", ids: [1831313601] },
   { name: "Chaotic Director", ids: [1833053375] },
-  { name: "Chaotic Host", ids: [1831313601] },
-  { name: "Chaotic Mod", ids: [] },
   { name: "Dolly Upercuts", ids: [1831253487] },
   { name: "Dolly Vs PrettyP", ids: [1832279432] },
   { name: "Pepper Spray", ids: [1832999426] },
@@ -18,9 +17,9 @@ export const GAME_PASSES: GamePass[] = [
 ];
 
 const RANK_FOLLOWUP_PASSES = new Set([
-  "Chaotic Host",
-  "Chaotic Director",
+  "Chaotic Hosters",
   "Chaotic Mod",
+  "Chaotic Director",
 ]);
 
 export function hasRankFollowup(passName: string): boolean {
