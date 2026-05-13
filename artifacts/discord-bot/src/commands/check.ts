@@ -190,9 +190,10 @@ export async function execute(
       }
     )
     .setFooter({
-      text: `Chaos Worldwide Bot • Checked ${gamePass.ids.length} pass ID(s)`,
+      text: `Chaos Worldwide Bot • Checked ${gamePass.ids.length} pass ID(s) • Powered by Remy`,
     })
     .setTimestamp();
 
-  await interaction.editReply({ embeds: [resultEmbed] });
+  await interaction.editReply({ content: "✅ Check complete!", embeds: [], components: [] });
+  await interaction.followUp({ embeds: [resultEmbed] });
 }
