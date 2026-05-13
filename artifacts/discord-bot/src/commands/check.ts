@@ -41,8 +41,10 @@ export async function execute(
     flags: MessageFlags.Ephemeral,
   });
 
-  const selectResponse = await interaction.channel
-    ?.awaitMessageComponent({
+  const reply = await interaction.fetchReply();
+
+  const selectResponse = await reply
+    .awaitMessageComponent({
       componentType: ComponentType.StringSelect,
       filter: (i) =>
         i.customId === "gamepass_select" && i.user.id === interaction.user.id,
