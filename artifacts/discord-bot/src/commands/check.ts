@@ -17,9 +17,7 @@ import {
 import { GAME_PASSES, hasRankFollowup } from "../gamepasses.js";
 import { checkAnyGamePass, getRobloxAvatar, getRobloxUserId } from "../roblox.js";
 
-const OWNED_FOLLOWUP = `You have successfully received your rank.
-
-Please remember that abusing administrative commands is strictly prohibited. This includes, but is not limited to: btools, :m / :n announcements, copying tools, charaudio, setmsg, stun commands, forcing players to sit, or kicking/banning/flinging users without proper authorization.
+const OWNED_FOLLOWUP = `Please remember that abusing administrative commands is strictly prohibited. This includes, but is not limited to: btools, :m / :n announcements, copying tools, charaudio, setmsg, stun commands, forcing players to sit, or kicking/banning/flinging users without proper authorization.
 
 Failure to follow community and administrative guidelines may result in punishment or rank removal.`;
 
