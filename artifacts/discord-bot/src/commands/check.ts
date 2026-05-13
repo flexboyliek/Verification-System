@@ -57,7 +57,7 @@ export async function execute(
     .setDescription(
       "Select a game pass from the dropdown below, then enter a Roblox username to check ownership."
     )
-    .setFooter({ text: "Chaos Worldwide Bot • Powered by Roblox API" })
+    .setFooter({ text: "Chaos Worldwide Bot • Powered by Remy" })
     .setTimestamp();
 
   await interaction.reply({
@@ -153,7 +153,7 @@ export async function execute(
     .setDescription(
       `Looking up **${username}** for the **${gamePass.name}** game pass...`
     )
-    .setFooter({ text: "Chaos Worldwide Bot • Powered by Roblox API" });
+    .setFooter({ text: "Chaos Worldwide Bot • Powered by Remy" });
 
   await interaction.editReply({ embeds: [loadingEmbed], components: [] });
 
@@ -166,7 +166,7 @@ export async function execute(
       .setDescription(
         `Could not find a Roblox account named **${username}**.\nDouble-check the spelling and try again.`
       )
-      .setFooter({ text: "Chaos Worldwide Bot • Powered by Roblox API" })
+      .setFooter({ text: "Chaos Worldwide Bot • Powered by Remy" })
       .setTimestamp();
 
     await interaction.editReply({ embeds: [notFoundEmbed] });
